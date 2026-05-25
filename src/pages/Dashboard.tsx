@@ -46,6 +46,7 @@ const statusData = [
 const Dashboard = () => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<string>("");
   const [showOrdersSummary, setShowOrdersSummary] = useState(false);
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -64,15 +65,19 @@ const Dashboard = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedFile) {
-      toast.success("Pedido enviado ao fornecedor");
-      setSelectedFile(null);
-      // Reset the file input
-      const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-    } else {
+    if (!selectedFile) {
       toast.error("Por favor, selecione um arquivo");
+      return;
     }
+    if (!selectedSupplier) {
+      toast.error("Selecione um fornecedor");
+      return;
+    }
+    toast.success(`Pedido enviado para ${selectedSupplier}`);
+    setSelectedFile(null);
+    setSelectedSupplier("");
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
   };
 
   const handleLogout = () => {
