@@ -1,17 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import background from "@/assets/background.webp";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,110 +16,38 @@ const Login = () => {
   const [showLogoSpinning, setShowLogoSpinning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const getOrCreateUserRole = async (
-    userId: string,
-    userMetadata?: Record<string, any>
-  ): Promise<"empresa" | "fornecedor"> => {
-    const { data: roleData, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (roleError) {
-      throw roleError;
-    }
-
-    if (roleData?.role) {
-      return roleData.role as "empresa" | "fornecedor";
-    }
-
-    const metadataRole =
-      (userMetadata?.userType as "empresa" | "fornecedor" | undefined) ?? "fornecedor";
-
-    const { data: newRoleData, error: insertError } = await supabase
-      .from("user_roles")
-      .insert({ user_id: userId, role: metadataRole })
-      .select("role")
-      .single();
-
-    if (insertError || !newRoleData?.role) {
-      throw insertError || new Error("Não foi possível definir o papel do usuário.");
-    }
-
-    return newRoleData.role as "empresa" | "fornecedor";
-  };
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const role = await getOrCreateUserRole(
-            session.user.id,
-            session.user.user_metadata
-          );
-
-          if (role === "empresa") {
-            navigate("/dashboard");
-          } else if (role === "fornecedor") {
-            navigate("/supplier-dashboard");
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao verificar sessão do usuário:", error);
-      }
-    };
-    checkUser();
-  }, [navigate]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMessage(null);
 
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("Erro ao fazer login");
-      }
-
-      // Get or create user role based on metadata
-      const role = await getOrCreateUserRole(
-        authData.user.id,
-        authData.user.user_metadata
-      );
-
-      // Show logo spinning animation
-      setShowLogoSpinning(true);
-      
-      // After 4 seconds, show success message
-      setTimeout(() => {
-        setShowLogoSpinning(false);
-        setShowSuccess(true);
-        
-        // After 2 more seconds, redirect
-        setTimeout(() => {
-          if (role === "empresa") {
-            navigate("/dashboard");
-          } else if (role === "fornecedor") {
-            navigate("/supplier-dashboard");
-          }
-        }, 2000);
-      }, 4000);
-    } catch (error: any) {
-      console.error("Login error:", error);
-      setErrorMessage("VOCÊ ERROU A Senha ou o Email tente novamente");
-    } finally {
-      setLoading(false);
+    if (!email || !password) {
+      setErrorMessage("Preencha email e senha");
+      return;
     }
+
+    setLoading(true);
+
+    // Login fictício para testes — aceita qualquer email/senha
+    const role: "empresa" | "fornecedor" = email.toLowerCase().includes("fornecedor")
+      ? "fornecedor"
+      : "empresa";
+
+    setShowLogoSpinning(true);
+
+    setTimeout(() => {
+      setShowLogoSpinning(false);
+      setShowSuccess(true);
+
+      setTimeout(() => {
+        if (role === "empresa") {
+          navigate("/dashboard");
+        } else {
+          navigate("/supplier-dashboard");
+        }
+      }, 2000);
+    }, 4000);
+
+    setLoading(false);
   };
 
   return (
